@@ -103,16 +103,16 @@ async def autonomous_pick_up_center_box():
     setM(left_motor, 0.4)
     await Actions.sleep(0.5)
     #Lift up box
-    drive_motor_speed = 1
-    await Actions.sleep(0.5)
-    drive_motor_speed = 0 
+    lift_motor_speed = 1
+    await Actions.sleep(1.5)
+    lift_motor_speed = 0 
     #Tells Roboto to move backwards
     setM(right_motor, -0.4)
     setM(left_motor, -0.4)
     #Unload box
-    drive_motor_speed = 0.5
-    await Actions.sleep(0.5)
-    drive_motor_speed = 0 
+    lift_motor_speed = -1
+    await Actions.sleep(1.5)
+    lift_motor_speed = 0 
     setM(right_motor, 0.1)
     setM(left_motor, 0.5)
     await Actions.sleep(1.0) 
@@ -163,9 +163,9 @@ def teleop_main():
         print(__file__)
     
     if Gamepad.get_value("r_bumper"):
-        drive_motor_speed = 1
+        lift_motor_speed = 1
     if Gamepad.get_value("l_bumper"):
-        drive_motor_speed = 0.5
+        lift_motor_speed = 0.5
     if dup:
         if dleft:
             setM(left_motor, 0)
