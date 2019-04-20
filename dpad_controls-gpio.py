@@ -30,7 +30,7 @@ start_pos_up = 1
 lift=[19, 26]
 left_motor = [21, 20]
 right_motor = [12, 16]
-def 
+
 def setM(motor, speed):
     if(speed >= 0):
         gpio.write(motor[1], 0)
@@ -55,27 +55,31 @@ def autonomous_main():
     
     
 async def autonomous_actions():
-    Robot.set_value(servo_arm_id, "servo1", 1.0) 
-    Robot.set_value(servo_arm_id, "servo0", 1.0) 
-    await Actions.sleep(2.0)
+    #Robot.set_value(servo_arm_id, "servo1", 1.0) 
+    #Robot.set_value(servo_arm_id, "servo0", 1.0) 
+    #await Actions.sleep(2.0)
     #Tells robot to move forward:
-    #Robot.run(autonomous_follow_line)
+    Robot.run(autonomous_move())
     
     
 async def autonomous_move():
     #Tells robot to move forward:
     #Opposite to go forward, same to turn.
     print("Starting forward")
-    Robot.set_value(left_motor, "duty_cycle", 0.3)
-    Robot.set_value(right_motor, "duty_cycle", -0.3)
+    setM(left_motor,0.3)
+    setM(right_motor,0.3)
     await Actions.sleep(2.0)
     print("Starting right turn 90 degrees")
-    Robot.set_value(left_motor, "duty_cycle", 0.3)
-    Robot.set_value(right_motor, "duty_cycle", 0.3)
+    #Robot.set_value(left_motor, "duty_cycle", 0.3)
+    #Robot.set_value(right_motor, "duty_cycle", 0.3)
+    setM(left_motor,-0.3)
+    setM(right_motor,0.3)
     await Actions.sleep(3.3)
     print("Starting foward")
-    Robot.set_value(left_motor, "duty_cycle", 0.5)
-    Robot.set_value(right_motor, "duty_cycle", -0.5)
+    #Robot.set_value(left_motor, "duty_cycle", 0.5)
+    #Robot.set_value(right_motor, "duty_cycle", -0.5)
+    setM(left_motor,0.3)
+    setM(right_motor,0.3)
     await Actions.sleep(2.0)
     print("Ending")
     
