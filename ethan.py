@@ -161,7 +161,7 @@ def teleop_main():
 
 
 
-
+'''
 # Problem 1
 def tennis_balls2(num):
   if num%3 == 0:
@@ -251,4 +251,4 @@ def get_coins(num):
   n = (int) (num / 5)
   num = num % 5
 
-  return int(str(q)+str(n)+str(num))
+  return int(str(q)+str(n)+str(num))'''
