@@ -1,4 +1,9 @@
 import time
+import os 
+# import pigpio
+# import RPLCD
+# __import__('pigpio.py')
+# pigpio.start();
 switchID = "31081732471476003969"
 count = 1
 time_count = 0
@@ -65,6 +70,10 @@ def teleop_main():
     ddown = Gamepad.get_value("dpad_down")
     dleft = Gamepad.get_value("dpad_left")
     dright = Gamepad.get_value("dpad_right")
+    
+    if Gamepad.get_value("button_x"):
+        print(__file__)
+    
     if Gamepad.get_value("r_bumper"):
         drive_motor_speed = 1
     if Gamepad.get_value("l_bumper"):
