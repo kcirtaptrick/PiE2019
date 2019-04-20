@@ -40,13 +40,72 @@ def setM(motor, speed):
         gpio.set_PWM_dutycycle(motor[1], 255 * -speed)
     # setM(motor, speed)
 def autonomous_setup():
-    # Runs one time1
     print("Autonomous mode has started!")
     Robot.run(autonomous_actions)
-    
+
 def autonomous_main():
-    # this repeats 20 times a second
     pass
+    #print("m")
+    #Robot.set_value(left_motor, "duty_cycle", -1.0)
+    #Robot.set_value(right_motor, "duty_cycle",1.0)
+    #Robot.set_value(servo_arm_id, "servo1", 1.0) 
+    #Robot.set_value(servo_arm_id, "servo0", -1.0) 
+    #await Actions.sleep(3.0)
+    #autonomous_move()
+    
+    
+async def autonomous_actions():
+    Robot.set_value(servo_arm_id, "servo1", 1.0) 
+    Robot.set_value(servo_arm_id, "servo0", 1.0) 
+    await Actions.sleep(2.0)
+    #Tells robot to move forward:
+    #Robot.run(autonomous_follow_line)
+    
+    
+async def autonomous_move():
+    #Tells robot to move forward:
+    #Opposite to go forward, same to turn.
+    print("Starting forward")
+    Robot.set_value(left_motor, "duty_cycle", 0.3)
+    Robot.set_value(right_motor, "duty_cycle", -0.3)
+    await Actions.sleep(2.0)
+    print("Starting right turn 90 degrees")
+    Robot.set_value(left_motor, "duty_cycle", 0.3)
+    Robot.set_value(right_motor, "duty_cycle", 0.3)
+    await Actions.sleep(3.3)
+    print("Starting foward")
+    Robot.set_value(left_motor, "duty_cycle", 0.5)
+    Robot.set_value(right_motor, "duty_cycle", -0.5)
+    await Actions.sleep(2.0)
+    print("Ending")
+    
+async def autonomous_follow_line():
+    print("Starting forward")
+    #Tells robot to move along line (More than 0.9 is black, less is white):
+    if(Robot.get_value(line_follower_id, "center") <= 0.9):
+        #Tells robot to move forward if on white line
+        Robot.set_value(left_motor, "duty_cycle", 0.4)
+        Robot.set_value(right_motor, "duty_cycle", -0.4)
+        print("Go straight")
+    elif (Robot.get_value(line_follower_id, "center") > 0.9):
+        #Tells robot to turn if not on white line
+        Robot.set_value(left_motor, "duty_cycle", -0.4)
+        Robot.set_value(right_motor, "duty_cycle", -0.4)
+        print("Turn")
+
+async def autonomous_pick_up_center_box():
+    #Tells robot to move forward:
+    Robot.set_value(left_motor, "duty_cycle", 0.4)
+    Robot.set_value(right_motor, "duty_cycle", 0.4)
+    await Actions.sleep(0.5)
+    #Lift up box
+    #Tells Roboto to move backwards
+    Robot.set_value(left_motor, "duty_cycle", -0.4)
+    Robot.set_value(right_motor, "duty_cycle", -0.4)
+    #Unload box
+    Robot.set_value(left_motor, "duty_cycle", 0.1)
+    Robot.set_value(right_motor, "duty_cycle", 0.5)
+    await Actions.sleep(1.0) 
 def move(duration, power = 1):
     setM(right_motor, power)
     setM(left_motor, power)
@@ -60,17 +119,17 @@ def turn(duration, power = 1):
     setM(right_motor, 0)
     setM(left_motor, 0)
 
-def auto1():
-    move(2, 1)
-    setM(right_motor, -1)
-    setM(left_motor, 1)
+#def auto1():
+#    move(2, 1)
+#    setM(right_motor, -1)
+#    setM(left_motor, 1)
     # move(2.7 * foot, -1)
     # turn(rotation * 0.3)
-async def autonomous_actions():
-    global foot
+#async def autonomous_actions():
+ #   global foot
     # Runs one time
-    auto1()
-    print("Autonomous action sequence started")
+  #  auto1()
+   # print("Autonomous action sequence started")
 
 def teleop_setup():
     print("Tele-operated mode has started!")
