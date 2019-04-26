@@ -1,17 +1,18 @@
 import time
 import os 
 import sys
+import json
 
 sys.path.insert(0, '/home/pi/.local/lib/python2.7/site-packages/')
 
 import pigpio
-# from RPLCD.gpio import CharLCD 
 
-gpio = pigpio.pi();
+gpio = pigpio.pi()
 
-# lcd = CharLCD(pin_rs=4, pin_rw=7, pin_e=8, pins_data=[25,24,23,18])
+recording = false
+path = []
 
-
+startTime = 0
 switchID = "31081732471476003969"
 count = 1
 time_count = 0
@@ -32,6 +33,12 @@ left_motor = [21, 20]
 right_motor = [12, 16]
 
 def setM(motor, speed):
+    if recording:
+        path.append({
+            "time": time.time() - startTime,
+            "motor": motor,
+            "speed": speed
+        })
     if(speed >= 0):
         gpio.write(motor[1], 0)
         gpio.set_PWM_dutycycle(motor[0], 255 * speed)
@@ -41,99 +48,20 @@ def setM(motor, speed):
     # setM(motor, speed)
 def autonomous_setup():
     print("Autonomous mode has started!")
-    Robot.run(autonomous_actions)
+    Robot.run(autonomous_actions())
 
 def autonomous_main():
     pass
-    #print("m")
-    #Robot.set_value(left_motor, "duty_cycle", -1.0)
-    #Robot.set_value(right_motor, "duty_cycle",1.0)
-    #Robot.set_value(servo_arm_id, "servo1", 1.0) 
-    #Robot.set_value(servo_arm_id, "servo0", -1.0) 
-    #await Actions.sleep(3.0)
-    #autonomous_move()
     
     
 async def autonomous_actions():
-    #Robot.set_value(servo_arm_id, "servo1", 1.0) 
-    #Robot.set_value(servo_arm_id, "servo0", 1.0) 
-    #await Actions.sleep(2.0)
     #Tells robot to move forward:
     Robot.run(autonomous_move())
     
     
 async def autonomous_move():
-    #Tells robot to move forward:
-    #Opposite to go forward, same to turn.
-    print("Starting forward")
-    setM(left_motor,0.3)
-    setM(right_motor,0.3)
-    await Actions.sleep(2.0)
-    print("Starting right turn 90 degrees")
-    #Robot.set_value(left_motor, "duty_cycle", 0.3)
-    #Robot.set_value(right_motor, "duty_cycle", 0.3)
-    setM(left_motor,-0.3)
-    setM(right_motor,0.3)
-    await Actions.sleep(3.3)
-    print("Starting foward")
-    #Robot.set_value(left_motor, "duty_cycle", 0.5)
-    #Robot.set_value(right_motor, "duty_cycle", -0.5)
-    setM(left_motor,0.3)
-    setM(right_motor,0.3)
-    await Actions.sleep(2.0)
-    print("Ending")
     
-async def autonomous_follow_line():
-    print("Starting forward")
-    #Tells robot to move along line (More than 0.9 is black, less is white):
-    if(Robot.get_value(line_follower_id, "center") <= 0.9):
-        #Tells robot to move forward if on white line
-        Robot.set_value(left_motor, "duty_cycle", 0.4)
-        Robot.set_value(right_motor, "duty_cycle", -0.4)
-        print("Go straight")
-    elif (Robot.get_value(line_follower_id, "center") > 0.9):
-        #Tells robot to turn if not on white line
-        Robot.set_value(left_motor, "duty_cycle", -0.4)
-        Robot.set_value(right_motor, "duty_cycle", -0.4)
-        print("Turn")
-
-async def autonomous_pick_up_center_box():
-    #Tells robot to move forward:
-    Robot.set_value(left_motor, "duty_cycle", 0.4)
-    Robot.set_value(right_motor, "duty_cycle", 0.4)
-    await Actions.sleep(0.5)
-    #Lift up box
-    #Tells Roboto to move backwards
-    Robot.set_value(left_motor, "duty_cycle", -0.4)
-    Robot.set_value(right_motor, "duty_cycle", -0.4)
-    #Unload box
-    Robot.set_value(left_motor, "duty_cycle", 0.1)
-    Robot.set_value(right_motor, "duty_cycle", 0.5)
-    await Actions.sleep(1.0) 
-def move(duration, power = 1):
-    setM(right_motor, power)
-    setM(left_motor, power)
-    time.sleep(duration)
-    setM(right_motor, 0)
-    setM(left_motor, 0)
-def turn(duration, power = 1):
-    setM(right_motor, -power)
-    setM(left_motor, power)
-    time.sleep(duration)
-    setM(right_motor, 0)
-    setM(left_motor, 0)
-
-#def auto1():
-#    move(2, 1)
-#    setM(right_motor, -1)
-#    setM(left_motor, 1)
-    # move(2.7 * foot, -1)
-    # turn(rotation * 0.3)
-#async def autonomous_actions():
- #   global foot
-    # Runs one time
-  #  auto1()
-   # print("Autonomous action sequence started")
+    
 
 def teleop_setup():
     print("Tele-operated mode has started!")
@@ -148,14 +76,19 @@ def teleop_main():
     ddown = Gamepad.get_value("dpad_down")
     dleft = Gamepad.get_value("dpad_left")
     dright = Gamepad.get_value("dpad_right")
-    
     if Gamepad.get_value("button_y"):
-        gpio.write(16, 1)
-    if Gamepad.get_value("button_b"):
-        gpio.write(16, 0)
+        if not recording:
+            recording = true
+            startTime = time.time()
     if Gamepad.get_value("button_x"):
-        print(__file__)
-    
+        if recording:
+            recording = false
+            with open('autonomous_data.json') as autoData:
+                json.dump(json.load(autoData).append({
+                        "Title": "Untitled",
+                        "time": time.time() - startTime,
+                        "path": path
+                    }), autoData)
     if Gamepad.get_value("r_bumper"):
         drive_motor_speed = 1
     if Gamepad.get_value("l_bumper"):
