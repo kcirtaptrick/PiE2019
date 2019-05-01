@@ -2,6 +2,7 @@ import time
 import os 
 import sys
 import json
+import threading
 from multiprocessing import Process
 
 
@@ -12,6 +13,49 @@ import pigpio
 
 gpio = pigpio.pi()
 
+class setInterval:
+    def __init__(self,action,interval) :
+        self.interval=interval
+        self.action=action
+        self.stopEvent=threading.Event()
+        thread=threading.Thread(target=self.__setInterval)
+        thread.start()
+
+    def __setInterval(self) :
+        nextTime=time.time()+self.interval
+        while not self.stopEvent.wait(nextTime-time.time()) :
+            nextTime+=self.interval
+            self.action()
+
+    def cancel(self) :
+        self.stopEvent.set()
+
+
+class led:
+    def __init__(self, rgbPins):
+        self.rgb = rgbPins
+    def reset(self):
+        for color in self.rgb:
+            gpio.write(color, 1)
+    def strobe(self, speed):
+        flag = False
+        print("Strobe")
+        def action(self, flag):
+            print("Strobing, flag: ", flag)
+            setRgb([flag, flag, flag])
+            flag = not flag
+        return setInterval(action(self, flag), 1 / speed)
+    def setRgb(self, vals):
+        for i in range(len(vals)):
+            if vals[i] % 1 == 0:
+                gpio.write(self.rgb[i], not vals[i])
+            else:
+                gpio.set_PWM_dutycycle(self.rgb[i], 255 * (1 - vals[i]))
+    
+            
+
+strip = led([2, 3, 4])
+currentAnimation = None
 
 motor = {
     "config": {
@@ -71,13 +115,14 @@ def setM(m, speed):
             gpio.write(m["pins"][0], 0)
             gpio.set_PWM_dutycycle(m["pins"][1], 255 * -speed)
     # setM(motor, speed)
+
 def resetMotors():
     for m in motor:
         if "pins" in motor[m]:
             gpio.write(motor[m]["pins"][0], 0)
             gpio.write(motor[m]["pins"][1], 0)
-
 resetMotors()
+
 def autonomous_setup():
     print("Autonomous mode has started!")
     Robot.run(autonomous_play)
@@ -89,6 +134,7 @@ def autonomous_main():
 async def autonomous_actions():
     #Tells robot to move forward:
     Robot.run(autonomous_move())
+
 async def autonomous_play():
     data = json.load(open(auto["file"], 'r'))
     
@@ -105,14 +151,13 @@ async def autonomous_play():
                 print('m["step"]: ' + str(m["step"]))
                 m["step"] += 1
                 setM(m, m["path"][m["step"]]["value"])
-            
+
 async def auto_action(motor, time):
     setM(motor, motor["value"])
     await Actions.sleep(time)
     
 async def autonomous_move():
     pass
-    
 
 def teleop_setup():
     print("Tele-operated mode has started!")
@@ -124,6 +169,7 @@ def teleop_main():
     global auto
     global startTime
     global motor
+    global currentAnimation
     dup = Gamepad.get_value("dpad_up")
     ddown = Gamepad.get_value("dpad_down")
     dleft = Gamepad.get_value("dpad_left")
@@ -141,6 +187,7 @@ def teleop_main():
                         "time": 0,
                         "value": 0
                     }]
+            strip.setRgb([0.5, 0, 0])
         else:
             print("Already recording")
     if Gamepad.get_value("button_back"):
@@ -153,24 +200,25 @@ def teleop_main():
                 "time": time.time() - startTime,
                 "motor": auto["motor"]
             })
-            
             # print(json.dumps(data, indent=2))
             json.dump(data, open(auto["file"], 'w'), indent=2)
+            
+            for i in range(0, 7):
+                strip.setRgb([0, i % 2, 0])
+                time.sleep(0.1)
         else:
             print("Not recording")
     
-    
     if Gamepad.get_value("button_b"):
-        data = []
-        for i in range(0, 10):
-            data.append({
-                "test" + str(i): i
-            })
-        print(data)
+        
+        currentAnimation and currentAnimation.cancel()
+        currentAnimation = strip.strobe(10)
+    
     if Gamepad.get_value("r_bumper"):
         motor["config"]["drive"] = 1
     if Gamepad.get_value("l_bumper"):
         motor["config"]["drive"] = 0.5
+        
     if dup:
         if dleft:
             setM(motor["left"], 0)
