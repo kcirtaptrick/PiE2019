@@ -196,7 +196,8 @@ def teleop_main():
             auto["recording"] = False
             data = json.load(open(auto["file"], 'r'))
             data.append({
-                "Title": "Untitled",
+                "title": "Untitled",
+                "selected": False,
                 "time": time.time() - startTime,
                 "motor": auto["motor"]
             })
