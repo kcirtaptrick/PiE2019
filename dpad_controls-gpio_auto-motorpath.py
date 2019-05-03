@@ -197,7 +197,6 @@ def teleop_main():
             data = json.load(open(auto["file"], 'r'))
             data.append({
                 "title": "Untitled",
-                "selected": False,
                 "time": time.time() - startTime,
                 "motor": auto["motor"]
             })
