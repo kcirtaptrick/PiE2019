@@ -5,13 +5,11 @@ import json
 import threading
 from multiprocessing import Process
 
-
-
 sys.path.insert(0, '/home/pi/.local/lib/python2.7/site-packages/')
 
 import pigpio
-
 gpio = pigpio.pi()
+
 
 class setInterval:
     def __init__(self,action,interval) :
@@ -51,25 +49,30 @@ class led:
                 gpio.write(self.rgb[i], not vals[i])
             else:
                 gpio.set_PWM_dutycycle(self.rgb[i], 255 * (1 - vals[i]))
-    
-            
+
 
 strip = led([2, 3, 4])
 currentAnimation = None
-
+servo = {
+    "getup": {
+        "id": "33085227150045326350192"
+    }
+}
 motor = {
     "config": {
-        "drive": 0.5,
+        "drive": 0.7,
         "lift": 1
     },
     "right": {
         "name": "right",
         "pins": [12, 16],
+        "ids": ["56703981851323474668674", "56693340712159916774481"],
         "value": 0
     },
     "left": {
         "name": "left",
         "pins": [21, 20],
+        "ids": ["56695389584535285373953", "56692415489952440942506"],
         "value": 0
     },
     "lift": {
@@ -81,7 +84,7 @@ motor = {
 
 
 auto = {
-    "file": "/home/pi/Autonomous/autonomous_motor-paths.json",
+    "file": "/home/pi/Autonomous/autonomous_motor-paths2.json",
     "recording": False,
     "motor": {},
     "foot": 0.73469387748,
@@ -91,9 +94,6 @@ auto = {
 
 startTime = 0
 switchID = "18851477588195929070"
-switch0 = False
-switch1 = False
-switch2 = False
 stop_down=1
 stop_up=1
 start_pos_up = 1
@@ -109,11 +109,19 @@ def setM(m, speed):
                 "value": speed
             })
         if(speed >= 0):
-            gpio.write(m["pins"][1], 0)
-            gpio.set_PWM_dutycycle(m["pins"][0], 255 * speed)
+            if "ids" in m:
+                for ID in m["ids"]:
+                    Robot.set_value(ID, "duty_cycle", -speed)
+            else:
+                gpio.write(m["pins"][1], 0)
+                gpio.set_PWM_dutycycle(m["pins"][0], 255 * speed)
         else:
-            gpio.write(m["pins"][0], 0)
-            gpio.set_PWM_dutycycle(m["pins"][1], 255 * -speed)
+            if "ids" in m:
+                for ID in m["ids"]:
+                    Robot.set_value(ID, "duty_cycle", -speed)
+            else:
+                gpio.write(m["pins"][0], 0)
+                gpio.set_PWM_dutycycle(m["pins"][1], 255 * -speed)
     # setM(motor, speed)
 
 def resetMotors():
@@ -122,7 +130,11 @@ def resetMotors():
             gpio.write(motor[m]["pins"][0], 0)
             gpio.write(motor[m]["pins"][1], 0)
 resetMotors()
-
+def checkSwitch(switch):
+    try:
+        return Robot.get_value(switchID, "switch" + str(switch));
+    except:
+        return True
 def autonomous_setup():
     print("Autonomous mode has started!")
     Robot.run(autonomous_play)
@@ -210,15 +222,14 @@ def teleop_main():
             print("Not recording")
     
     if Gamepad.get_value("button_b"):
-        
         currentAnimation and currentAnimation.cancel()
         currentAnimation = strip.strobe(10)
     
     if Gamepad.get_value("r_bumper"):
         motor["config"]["drive"] = 1
     if Gamepad.get_value("l_bumper"):
-        motor["config"]["drive"] = 0.5
-        
+        motor["config"]["drive"] = 0.7
+    
     if dup:
         if dleft:
             setM(motor["left"], 0)
@@ -248,8 +259,8 @@ def teleop_main():
     else:
         setM(motor["right"], 0)
         setM(motor["left"], 0)
-        
-        
+    
+    
     # setM(motor["left"], (Gamepad.get_value("dpad_up") - Gamepad.get_value("dpad_down") + Gamepad.get_value("dpad_right") - Gamepad.get_value("dpad_left")) * motor["config"]["drive"])
     # setM(motor["right"], (Gamepad.get_value("dpad_up") - Gamepad.get_value("dpad_down") - Gamepad.get_value("dpad_right") + Gamepad.get_value("dpad_left")) * motor["config"]["drive"])
    
@@ -260,21 +271,21 @@ def teleop_main():
     if Gamepad.get_value("r_trigger") == 1:
         stop_down = 1  # clear stop value
         start_pos_up = 1
-        if Robot.get_value(switchID,"switch0") and stop_up:
+        if checkSwitch(0) and stop_up:
             setM(motor["lift"], motor["config"]["lift"])# keep going UP
         else: # hit top limit switch, stop and reverse motor
             setM(motor["lift"], 0.0)  # stop motor for now
-    elif Gamepad.get_value("l_trigger") == 1 :
+    elif Gamepad.get_value("l_trigger") == 1:
         start_pos_up = 1
         stop_up = 1  # clear stop value
-        if Robot.get_value(switchID,"switch2") and stop_down:
+        if checkSwitch(2) and stop_down:
             setM(motor["lift"], -motor["config"]["lift"])# keeping going DOWN
         else: # hit bottom limit switch, stop and reverse motor
             setM(motor["lift"], 0.0)  # stop motor for now
     elif Gamepad.get_value("button_a") == 1:
-        if Robot.get_value(switchID,"switch1") and start_pos_up :
+        if checkSwitch(1) and start_pos_up :
             setM(motor["lift"], motor["config"]["lift"]) # go up 
-        elif Robot.get_value(switchID,"switch1") == 0  :
+        elif checkSwitch(1) == 0:
             setM(motor["lift"], 0.0)# stop
             start_pos_up = 0
     else:
